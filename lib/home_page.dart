@@ -6,9 +6,7 @@ import 'package:flutter/material.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
-  // ...existing code...
   static const List<String> categorias = ["Todas"];
-  // ...existing code...
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -18,11 +16,7 @@ class _HomePageState extends State<HomePage> {
   final NoticiaService _noticiasService = NoticiaService();
   late Future<List<Noticia>> _listaNoticia;
 
-  // ...existing code...
-  // (removed the duplicate 'static const List<String> categorias' from here)
-  // ...existing code...
-
-   @override
+  @override
   void initState() {
     super.initState();
     _listaNoticia = _noticiasService.getNoticias();
@@ -147,7 +141,12 @@ class _HomePageState extends State<HomePage> {
                             width: double.infinity,
                             height: 120,
                             color: const Color(0xFFE4E9EF),
-                            child: const Icon(Icons.image_outlined),
+                            child: Image.network(
+                              noticia.imagem!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stack) =>
+                                  const Icon(Icons.image_outlined),
+                            ),
                           ),
                           Padding(
                             padding: const EdgeInsets.all(12),
@@ -165,7 +164,7 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                       ),
                                       child: Text(
-                                        'categoria ${noticia.categoriaId}',
+                                        noticia.categoriaNome,
                                       ),
                                     ),
                                     const SizedBox(width: 15),
