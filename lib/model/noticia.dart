@@ -16,7 +16,7 @@ class Noticia {
     required this.conteudo,
     required this.categoriaId,
     required this.categoriaNome,
-    required this.imagem,
+    this.imagem,
     required this.createdAt
   });
 
