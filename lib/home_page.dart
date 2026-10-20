@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
-  static const List<String> categorias = ["Todas"];
+  static Null get categorias => null;
+
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -16,6 +17,23 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final NoticiaService _noticiasService = NoticiaService();
   late Future<List<Noticia>> _listaNoticia;
+
+   static const List<String> categorias = ["Todas"];
+
+    bool _buscando = false;
+    String _textoPesquisa = '';
+
+    List<Noticia> aplicarFiltro(List<Noticia> noticias) {
+      if(_textoPesquisa.isNotEmpty) {
+        return noticias.where((noticia) {
+          return noticia.titulo.toLowerCase().contains(_textoPesquisa.toLowerCase(),
+          ) || noticia.resumo.toLowerCase().contains(_textoPesquisa.toLowerCase());
+        }).toList();
+      }
+
+      return noticias;
+    }
+
 
   @override
   void initState() {
@@ -27,15 +45,32 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset(
+        title: _buscando ? TextField(
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Pesquisar...',
+          ),
+          onChanged: (valor) {
+            setState(() {
+              _textoPesquisa = valor;
+            });
+          },
+        ): Image.asset(
           'assets/img/logotipo.png',
-          height: 22,
+          height: 22,     
         ),
         centerTitle: true,
         actions: [
-          const Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: Icon(Icons.search),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: IconButton(onPressed: () {
+              setState(() {
+                _buscando = ! _buscando;
+                if(! _buscando) {
+                  _textoPesquisa = '';
+                }
+              });
+            }, icon: Icon(_buscando ? Icons.close : Icons.search)),
           ),
         ],
       ),
@@ -76,7 +111,7 @@ class _HomePageState extends State<HomePage> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              children: HomePage.categorias.map((categoria) {
+              children: categorias.map((categoria) {
                 final selecionada = categoria == "Todas";
 
                 return Container(
@@ -119,7 +154,9 @@ class _HomePageState extends State<HomePage> {
                   );
                 }
 
-                final noticias = asyncSnapshot.data ?? [];
+                final todasNoticias = asyncSnapshot.data ?? [];
+
+                final noticias = aplicarFiltro(todasNoticias);
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(12),
