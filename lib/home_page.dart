@@ -1,76 +1,127 @@
-import 'package:app_noticias/detalhe_noticia_page.dart';
+import 'package:app_noticias/model/categoria.dart';
 import 'package:app_noticias/model/noticia.dart';
+import 'package:app_noticias/services/categorias_services.dart';
 import 'package:app_noticias/services/noticia_service.dart';
-import 'package:app_noticias/sobre_page.dart';
 import 'package:flutter/material.dart';
-
+import '../detalhe_noticia_page.dart';
+import '../sobre_page.dart';
+ 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-
-  static Null get categorias => null;
-
-
+ 
   @override
   State<HomePage> createState() => _HomePageState();
 }
-
+ 
 class _HomePageState extends State<HomePage> {
   final NoticiaService _noticiasService = NoticiaService();
   late Future<List<Noticia>> _listaNoticia;
+  final CategoriasServices _categoriaService = CategoriasServices();
+ 
+  List<Categoria> _listaCategoria = [];
+ 
+  // Variável que estava em falta para controlar a categoria selecionada
+  String _categoriaSelecionada = "Todas";
+ 
+  bool _buscando = false;
+  String _textoPesquisa = '';
+ 
+  Future<void> carregarCategorias() async {
+    try {
+      final categorias = await _categoriaService.getCategorias();
+ 
+      if (!mounted) return;
+ 
+      setState(() {
+        _listaCategoria = categorias;
+      });
+    } catch (e) {
+      debugPrint('Erro ao carregar categorias: $e');
+    }
+  }
+ 
+  List<Noticia> aplicarFiltro(List<Noticia> noticias) {
+    // Filtrar por categoria selecionada (se for diferente de "Todas")
+    var noticiasFiltradas = noticias;
+    if (_categoriaSelecionada != "Todas") {
+      noticiasFiltradas = noticiasFiltradas.where((noticia) {
+        return noticia.categoriaNome.toLowerCase() ==
+            _categoriaSelecionada.toLowerCase();
+      }).toList();   
 
-   static const List<String> categorias = ["Todas"];
+    if(_categoriaSelecionada != 'Todas'){
 
-    bool _buscando = false;
-    String _textoPesquisa = '';
-
-    List<Noticia> aplicarFiltro(List<Noticia> noticias) {
-      if(_textoPesquisa.isNotEmpty) {
-        return noticias.where((noticia) {
-          return noticia.titulo.toLowerCase().contains(_textoPesquisa.toLowerCase(),
-          ) || noticia.resumo.toLowerCase().contains(_textoPesquisa.toLowerCase());
-        }).toList();
-      }
-
-      return noticias;
+      noticiasFiltradas = noticiasFiltradas.where((noticia) {
+        return noticia.categoriaNome.toLowerCase() == _categoriaSelecionada.toLowerCase();
+      }).toList();
     }
 
-
+    return noticiasFiltradas;
+  }
+  
+ 
+    // Filtrar por texto de pesquisa
+    if (_textoPesquisa.isNotEmpty) {
+      return noticiasFiltradas.where((noticia) {
+        return noticia.titulo.toLowerCase().contains(
+              _textoPesquisa.toLowerCase(),
+            ) ||
+            noticia.resumo.toLowerCase().contains(_textoPesquisa.toLowerCase());
+      }).toList();
+    }
+ 
+    return noticiasFiltradas;
+  }
+ 
   @override
   void initState() {
     super.initState();
     _listaNoticia = _noticiasService.getNoticias();
+    carregarCategorias();
   }
-
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: _buscando ? TextField(
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Pesquisar...',
-          ),
-          onChanged: (valor) {
-            setState(() {
-              _textoPesquisa = valor;
-            });
-          },
-        ): Image.asset(
-          'assets/img/logotipo.png',
-          height: 22,     
-        ),
+        title: _buscando
+            ? TextField(
+                autofocus: true,
+                cursorColor: Colors.black,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 16,
+                ),
+                decoration: const InputDecoration(
+                  hintText: 'Pesquisar...',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  border: InputBorder.none,
+                ),
+                onChanged: (valor) {
+                  setState(() {
+                    _textoPesquisa = valor;
+                  });
+                },
+              )
+            : Image.asset(
+                'assets/img/logotipo.png',
+                height: 20,
+              ),
         centerTitle: true,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: IconButton(onPressed: () {
-              setState(() {
-                _buscando = ! _buscando;
-                if(! _buscando) {
-                  _textoPesquisa = '';
-                }
-              });
-            }, icon: Icon(_buscando ? Icons.close : Icons.search)),
+            child: IconButton(
+              onPressed: () {
+                setState(() {
+                  _buscando = !_buscando;
+                  if (!_buscando) {
+                    _textoPesquisa = '';
+                  }
+                });
+              },
+              icon: Icon(_buscando ? Icons.close : Icons.search),
+            ),
           ),
         ],
       ),
@@ -108,34 +159,57 @@ class _HomePageState extends State<HomePage> {
         children: [
           SizedBox(
             height: 45,
-            child: ListView(
+            child: ListView.builder(
+              itemCount: _listaCategoria.length + 1,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              children: categorias.map((categoria) {
-                final selecionada = categoria == "Todas";
-
-                return Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(
-                      color: selecionada
-                          ? Colors.black
-                          : const Color(0xFFEDEDED),
+              itemBuilder: (context, index) {
+                final categoria = index == 0
+                    ? 'Todas'
+                    : _listaCategoria[index - 1].nome;
+                final selecionada = _categoriaSelecionada == categoria;
+ 
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _categoriaSelecionada = categoria;
+                    });
+                  },
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _categoriaSelecionada = categoria;
+                      });
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: selecionada
+                              ? Colors.black
+                              : const Color(0xFFEDEDED),
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        categoria,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: selecionada
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    categoria,
-                    style: const TextStyle(fontSize: 12),
-                  ),
                 );
-              }).toList(),
+              },
             ),
           ),
           Expanded(
@@ -147,23 +221,28 @@ class _HomePageState extends State<HomePage> {
                     child: CircularProgressIndicator(),
                   );
                 }
-
+ 
                 if (asyncSnapshot.hasError) {
                   return Center(
                     child: Text('${asyncSnapshot.error}'),
                   );
                 }
-
+ 
                 final todasNoticias = asyncSnapshot.data ?? [];
-
                 final noticias = aplicarFiltro(todasNoticias);
-
+ 
+                if (noticias.isEmpty) {
+                  return const Center(
+                    child: Text('Nenhuma notícia encontrada.'),
+                  );
+                }
+ 
                 return ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: noticias.length,
                   itemBuilder: (context, index) {
                     final noticia = noticias[index];
-
+ 
                     return InkWell(
                       onTap: () => Navigator.push(
                         context,
@@ -202,13 +281,6 @@ class _HomePageState extends State<HomePage> {
                                       fit: BoxFit.cover,
                                       width: double.infinity,
                                       errorBuilder: (context, error, stack) {
-                                        debugPrint(
-                                          'URL da imagem: ${noticia.imagem}',
-                                        );
-                                        debugPrint(
-                                          'Erro ao carregar imagem: $error',
-                                        );
-
                                         return const Center(
                                           child: Icon(
                                             Icons.broken_image_outlined,
@@ -227,6 +299,10 @@ class _HomePageState extends State<HomePage> {
                                   Row(
                                     children: [
                                       Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFEFF4F8),
                                           borderRadius: BorderRadius.circular(
@@ -238,20 +314,22 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                         child: Text(
                                           noticia.categoriaNome,
+                                          style: const TextStyle(fontSize: 10),
                                         ),
                                       ),
                                       const SizedBox(width: 15),
                                       Text(
-                                        ' ${noticia.dataFormatada}',
+                                        noticia.dataFormatada,
                                         style: const TextStyle(
                                           color: Color(0xFF858D96),
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    ' ${noticia.titulo}',
+                                    noticia.titulo,
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
@@ -261,7 +339,7 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    ' ${noticia.resumo}',
+                                    noticia.resumo,
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: Color(0xFF586879),
