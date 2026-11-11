@@ -13,12 +13,12 @@ class TesteApi extends StatefulWidget {
 class _TesteApiState extends State<TesteApi> {
   String mensagem = 'Toque no botão para testar';
 
-  final NoticiaService _noticiaService = NoticiaService();
+  final NoticiasService _noticiaService = NoticiasService();
 
   late Future<List<Noticia>> _listaNoticias;
 
   Future<void> carregarNoticias() async {
-    _listaNoticias = _noticiaService.getNoticias();
+    _listaNoticias = _noticiaService.getNoticia();
 
     List<Noticia> noticias = await _listaNoticias;
 

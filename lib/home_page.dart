@@ -1,3 +1,4 @@
+import 'package:app_noticias/cadastar_noticia_page.dart';
 import 'package:app_noticias/detalhe_noticia_page.dart';
 import 'package:app_noticias/login_page.dart';
 import 'package:app_noticias/model/categoria.dart';
@@ -16,7 +17,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final NoticiaService _noticiasService = NoticiaService();
+  final NoticiasService _noticiasService = NoticiasService();
   late Future<List<Noticia>> _listaNoticias;
   final CategoriasServices _categoriasService = CategoriasServices();
   final LoginService _loginService = LoginService();
@@ -30,7 +31,7 @@ class _HomePageState extends State<HomePage> {
   bool _logado = false;
 
   void carregarDados() {
-    _listaNoticias = _noticiasService.getNoticias();
+    _listaNoticias = _noticiasService.getNoticia();
     carregarCategorias();
   }
 
@@ -151,6 +152,25 @@ class _HomePageState extends State<HomePage> {
                 );
               },
             ),
+
+            const Divider(),
+
+
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('Cadastrar Noticia'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CadastrarNoticiaPage(),
+                  ),
+                );
+              },
+            ),
+
+
             const Divider(),
 
             _logado
